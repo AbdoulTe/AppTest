@@ -1,0 +1,42 @@
+nom : CI
+sur :
+  pousser :
+    branches : [ principales ]
+
+emplois :
+  construire :
+    fonctionne sur : ubuntu-latest
+
+    étapes :
+      - utilise : actions/checkout@v2
+
+      # utilisé pour mettre en cache les dépendances avec un délai d'attente
+      - nom : Obtenir la date
+        id : obtenir-date
+        courir : |
+          echo "::set-output nom=date::$(/bin/date -u "+%Y%m%d")"
+        interpréteur de commandes : bash
+
+      - nom : répertoire global de Cache Buildozer
+        utilisations : actions/cache@v2
+        avec :
+          chemin : .buildozer_global
+          clé : buildozer-global-${{ hashFiles('buildozer.spec') }} # Remplacez par votre chemin
+
+      - utilise : actions/cache@v2
+        avec :
+          chemin : .buildozer
+          clé : ${{runner.os}}-${{steps.get-date.outputs.date}}-${{hashFiles('buildozer.spec')}}
+
+      - nom : Construire avec Buildozer
+        utilisations : ArtemSBulgakov/buildozer-action@v1
+        identifiant : constructeur
+        avec :
+          commande : buildozer android debug
+          buildozer_version : maître
+
+      - nom : Télécharger des artefacts
+        utilisations : actions/upload-artifact@v2
+        avec :
+          nom : paquet
+          chemin : ${{ steps.buildozer.outputs.filename }}
